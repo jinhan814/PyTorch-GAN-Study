@@ -14,10 +14,10 @@ class NormalizationLayer(nn.Module):
         return x * (((x**2).mean(dim=1, keepdim=True) + epsilon).rsqrt())
 
 def Upsampling(x, factor=2):
-    assert isinstance(factor, int) and factor >=1  ## 이게 있어야할까? 라는 궁금증
+    # assert isinstance(factor, int) and factor >=1  ## 이게 있어야할까? 라는 궁금증
     
-    if factor == 1 :  ## 이것도 있어야 할까?
-        return x  
+    # if factor == 1 :  ## 이것도 있어야 할까?
+    #     return x  
     
     s =  x.size()
     x = x.view(-1, s[1], s[2], 1, s[3], 1)
