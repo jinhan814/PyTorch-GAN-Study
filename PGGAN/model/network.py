@@ -50,7 +50,7 @@ class GNet(nn.Module):
 
         for scale, scaleLayer in enumerate(self.scaleLayers):
             x = scaleLayer(x)
-            if 1: # 마지막에서 두 번째 레이어이면서 alpha값으로 합쳐야하는 경우. (나중에 작성하기)
+            if scale == len(self.scaleLayers) - 2 and alpha > 0:
                 y = Upsampling(x)
                 y = self.toRGBLayers[-1](x)
         
