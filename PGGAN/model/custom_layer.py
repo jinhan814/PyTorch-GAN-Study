@@ -30,8 +30,10 @@ def Upsampling(x, factor=2):
     형태(순서)가 달라질 수 있으나 실제로 메모리상의 원소들의 위치는 바뀌지 않고 접근 인덱스만
     바뀐다. 따라서 추가로 변형을 할때는 그 메모리도 재할당해줄 필요가 있다. 
     '''
-    
     return x
+
+def Downsampling(x):
+    return nn.functional.avg_pool2d(x, (2,2))
 
 
 def getLayerNormalizationFactor(x):
