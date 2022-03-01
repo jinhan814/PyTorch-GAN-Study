@@ -52,6 +52,14 @@ class GNet(nn.Module):
                                                  1))
     
     def forward(self, x):
+        # assume that x.shape = (batch_size, 512, 1, 1)
+
+        x = x.view(-1, torch.prod(x.size()[1:]))
+        x = self.normalization_layer(x)
+
+
+        # question. normalization_layer에서 forward하면 batch 단위로 normalization? 아니면 통으로?
+
         x = self.normalization_layer(x)
         x = x.view(-1, torch.prod(x.size()[1:]))
         x = self.fc_layer(x)
