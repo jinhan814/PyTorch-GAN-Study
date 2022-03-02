@@ -1,3 +1,4 @@
+from heapq import merge
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -92,10 +93,12 @@ class DNet(nn.module):
         self.dimInput = dimInput
         self.leakyRelu = nn.LeakyReLU(leakyReluLeak)
         self.alpha = 0
-        self.decisionlayer = EqualizedLinear(self.depthScale0,1)   # depthscale0 = 512
+        self.decisionLayer = EqualizedLinear(self.depthScale0,1)   # depthscale0 = 512
+        self.groupScaleZero = nn.ModuleList()
+        self.groupScaleZero = self.groupScaleZero.append(EqualizedConv2d(depthScale0, depthScale0,3))
+        self.groupScaleZero = self.groupScaleZero.append( EqualizedLinear(depthScale0 *4 *4,
+                                              depthScale0))
         
-        self.groupscalezero = EqualizedLinear(depthScale0 *4 *4,
-                                              depthScale0)
         
         self.scaleLayers = nn.ModuleList()
         self.scaleLayers.append(nn.ModuleList([
@@ -117,11 +120,36 @@ class DNet(nn.module):
     def add_sacle():
         pass
     def foward(self, x):
-        
-        if self.alpha > 0    ##### 모르겠당
+        mergeLayer=False
+        if self.alpha > 0 and len(self.fromRGBlayer)>1 :
             y = Downsampling(x)
-            y = self.fromRGBlayer[](y)
+            y = self.leakyRelu(self.fromRGBlayer[-2](y))
+            mergeLayer=True
+        
+        x = self.leakyRelu(self.fromRGBlayer[-1](x))
+        
+        
+        for scaleLayer in reversed(self.scaleLayers):
+            for convLayer in scaleLayer:
+                x=convLayer(x)
+            x=Downsampling(x)
+            
+            if mergeLayer:
+                mergeLayer=False
+                x = y*self.alpha + x*(1-self.alpha)
+                
+            # batchnormal?
+            
+        x = self.leakyRelu(self.groupScaleZero[0](x))
+        x = x.view(-1, torch.prod(x.size()[1:]))
+        
+        x = self.leakyRelu(self.groupScaleZero[1](x))
+        x = self.decisionLayer(x)
+        return x
+        
+            
+            
+            
             
         
-        pass
 
