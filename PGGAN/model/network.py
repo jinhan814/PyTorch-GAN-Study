@@ -1,155 +1,152 @@
-from heapq import merge
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from .custom_layer import NormalizationLayer, EqualizedLinear, EqualizedConv2d, Upsampling, Downsampling
 
+
 class GNet(nn.Module):
-    def __init__(self,
-                 dimLatent=512,
-                 leakyReluLeak=0.2,
-                 dimOutput=3):
+    def __init__(self, dim_latent=512, dim_output=3, leakyReLU_slope=0.2):
         super(GNet, self).__init__()
-        '''
-        things to do
-
-        1. latent vector(512 * 1 * 1) -> (512 * 4 * 4) (fc + view)
-        2. scale 별 upsample + conv + @(normalization, lReLU, ...)
-        3. toRGB 적용 + alpha 비율대로 합치기
-        '''
-        self.dimLatent = dimLatent
-        self.leakyRelu = nn.LeakyReLU(leakyReluLeak)
-        self.dimOutput = dimOutput
-        self.alpha = 0
-        self.normalizationLayer = NormalizationLayer()
-        self.formatLayer = EqualizedLinear(self.dimLatent,
-                                           16 * self.dimLatent)
+        self.dim_latent          = dim_latent
+        self.dim_output          = dim_output
+        self.alpha               = 0.0
+        self.activation_fn       = nn.LeakyReLU(leakyReLU_slope)
+        self.normalization_layer = NormalizationLayer()
+        self.fc_layer            = EqualizedLinear(self.dim_latent, 16 * self.dim_latent)
         
-        # scale별 layer block
-        self.scaleLayers = nn.ModuleList()
-        self.scaleLayers.append(nn.ModuleList([
-            EqualizedConv2d(self.dimLatent,
-                            self.dimLatent,
-                            3,
-                            padding=1),
-            self.leakyRelu,
-            self.normalizationLayer
-        ]))
-
-        # scale별 toRGB layer
-        self.toRGBLayer = nn.ModuleList()
+        # channel per scale
+        self.scale_channels = [self.dim_latent]
         
-        # scale depth 리스트
-        self.scaledepths = [dimLatent]
+        # layer by scale
+        self.scale_layers = nn.ModuleList()
+        self.scale_layers.append(nn.ModuleList())
+        self.scale_layers[-1].append(EqualizedConv2d(self.dim_latent,
+                                                     self.dim_latent,
+                                                     3,
+                                                     padding=1))
+        
+        # toRGB layer by scale
+        self.toRGB_layers = nn.ModuleList()
+        self.toRGB_layers.append(EqualizedConv2d(self.dim_latent,
+                                                 self.dim_output,
+                                                 1))
     
-    def addScale(self, depthNewScale):
+    def AddScale(self, new_channel):
+        # update scale_channels
+        self.scale_channels.append(new_channel)
+
+        # update scale_layers
+        self.scale_layers.append(nn.ModuleList())
+        self.scale_layers[-1].append(EqualziedConv2d(self.scale_channels[-2],
+                                                     self.scale_channels[-1],
+                                                     3,
+                                                     padding=1))
+        self.scale_layers[-1].append(EqualziedConv2d(self.scale_channels[-1],
+                                                     self.scale_channels[-1],
+                                                     3,
+                                                     padding=1))
         
-        depthLastScale = self.scalesDepth[-1]
-
-        self.scalesDepth.append(depthNewScale)
-
-        self.scaleLayers.append(nn.ModuleList())
-
-        self.scaleLayers[-1].append(EqualizedConv2d(depthLastScale,
-                                                    depthNewScale,
-                                                    3,
-                                                    padding=1))
-        self.scaleLayers[-1].append(self.leakyRelu)
-        self.scaleLayers[-1].append(self.normalizationLayer)
-        
-        self.scaleLayers[-1].append(EqualizedConv2d(depthNewScale, depthNewScale,
-                                                    3, padding=1))
-        self.scaleLayers[-1].append(self.leakyRelu)
-        self.scaleLayers[-1].append(self.normalizationLayer)
-
-        self.toRGBLayer.append(EqualizedConv2d(depthNewScale,
-                                                self.dimOutput,
-                                                1))
+        # update toRGB_layers
+        self.toRGB_layers.append(EqualizedConv2d(self.scale_channels[-1],
+                                                 self.dim_output,
+                                                 1))
     
-    def forward(self, x):
-        x = self.normalizationLayer(x)
-        x = x.view(-1, torch.prod(x.size()[1:]))
-        x = self.leakyRelu(self.formatLayer(x))
+    def SetAlpha(self, new_alpha):
+        self.alpha = new_alpha
+    
+    def forward(self, x): # x.size() == (batch_size, 512, 1, 1)
+        x = x.view(x.size()[0], -1))
+        x = self.normalization_layer(x)
+        x = self.fc_layer(x)
+        x = self.activation_fn(x)
         x = x.view(x.size()[0], -1, 4, 4)
-        x = self.normalizationLayer(x)
+        x = self.normalization_layer(x)
 
-        for scale, scaleLayer in enumerate(self.scaleLayers):
-            x = scaleLayer(x)
-            if scale == len(self.scaleLayers) - 2 and self.alpha > 0:
+        for scale, scale_layers in enumerate(self.scale_layers):
+            if scale:
+                x = Upsampling(x)
+            for scale_layer in scale_layers:
+                x = scale_layer(x)
+                x = self.activation_fn(x)
+                x = self.normalization_layer(x)
+            if scale == len(self.scale_layers) - 2 and self.alpha > 0.0:
+                y = self.toRGB_layers[-2](x)
                 y = Upsampling(x)
-                y = self.toRGBLayers[-1](x)
         
-        x = self.toRGBLayer[-1](x)
-        if self.alpha > 0:
+        x = self.toRGB_layers[-1](x)
+        if self.alpha > 0.0:
             x = self.alpha * y + (1 - self.alpha) * x
         return x
 
 
 class DNet(nn.module):
-    def __init__(self,depthScale0,
-                 leakyReluLeak=0.2,
-                 dimInput=3):
-        self.depthscale0 = depthScale0
-        self.dimInput = dimInput
-        self.leakyRelu = nn.LeakyReLU(leakyReluLeak)
-        self.alpha = 0
-        self.decisionLayer = EqualizedLinear(self.depthScale0,1)   # depthscale0 = 512
-        self.groupScaleZero = nn.ModuleList()
-        self.groupScaleZero = self.groupScaleZero.append(EqualizedConv2d(depthScale0, depthScale0,3))
-        self.groupScaleZero = self.groupScaleZero.append( EqualizedLinear(depthScale0 *4 *4,
-                                              depthScale0))
-        
-        
-        self.scaleLayers = nn.ModuleList()
-        self.scaleLayers.append(nn.ModuleList([
-            EqualizedConv2d(self.depthScale0,
-                            self.depthScale0,
-                            3,
-                            padding=1),
-            self.leakyRelu
-        ]))
-        
-        self.fromRGBlayer = nn.ModuleList()
-        self.fromRGBlayer.append(EqualizedConv2d(self.dimInput,
-                                                 self.depthScale0))
-        
-        '''
-        우리는 오늘 장렬히 일주일을 마무리하겠다.
-        '''
-        
-    def add_sacle():
-        pass
-    def foward(self, x):
-        mergeLayer=False
-        if self.alpha > 0 and len(self.fromRGBlayer)>1 :
-            y = Downsampling(x)
-            y = self.leakyRelu(self.fromRGBlayer[-2](y))
-            mergeLayer=True
-        
-        x = self.leakyRelu(self.fromRGBlayer[-1](x))
-        
-        
-        for scaleLayer in reversed(self.scaleLayers):
-            for convLayer in scaleLayer:
-                x=convLayer(x)
-            x=Downsampling(x)
-            
-            if mergeLayer:
-                mergeLayer=False
-                x = y*self.alpha + x*(1-self.alpha)
-                
-            # batchnormal?
-            
-        x = self.leakyRelu(self.groupScaleZero[0](x))
-        x = x.view(-1, torch.prod(x.size()[1:]))
-        
-        x = self.leakyRelu(self.groupScaleZero[1](x))
-        x = self.decisionLayer(x)
-        return x
-        
-            
-            
-            
-            
-        
+    def __init__(self, channel_scale_0=512, dim_input=3, leakyReLU_slope=0.2):
+        super(DNet, self).__init__()
+        self.channel_scale_0 = channel_scale_0 # Dirty, find a better way
+        self.dim_input       = dim_input
+        self.alpha           = 0.0
+        self.activation_fn   = nn.LeakyReLU(leakyReLU_slope)
+        self.fc_layer        = EqualizedLinear(16 * self.channel_scale_0, self.channel_scale_0)
+        self.decision_layer  = EqualizedLinear(self.channel_scale_0, 1)
 
+        # channel per scale
+        self.scale_channels = [self.channel_scale_0]
+
+        # layer by scale
+        self.scale_layers = nn.ModuleList()
+        self.scale_layers.append(nn.ModuleList())
+        self.scale_layers[-1].append(EqualizedConv2d(self.channel_scale_0,
+                                                     self.channel_scale_0,
+                                                     3,
+                                                     padding=1))
+        
+        # fromRGB layer by scale
+        self.fromRGB_layers = nn.ModuleList()
+        self.fromRGB_layers.append(EqualizedConv2d(self.dim_input,
+                                                   self.channel_scale_0))
+    
+    def AddScale(self, new_channel):
+        # update scale_channels
+        self.scale_channels.append(new_channel)
+
+        # update scale_layers
+        self.scale_layers.append(nn.ModuleList())
+        self.scale_layers[-1].append(EqualizedConv2d(self.scale_channels[-1],
+                                                     self.scale_channels[-1],
+                                                     3,
+                                                     padding=1))
+        self.scale_layers[-1].append(EqualizedConv2d(self.scale_channels[-1],
+                                                     self.scale_channels[-2],
+                                                     3,
+                                                     padding=1))
+        
+        # update fromRGB_layers
+        self.fromRGB_layers.append(EqualizedConv2d(self.dim_input,
+                                                   self.scale_channels[-1],
+                                                   1))
+    
+    def SetAlpha(self, new_alpha):
+        self.alpha = new_alpha
+    
+    def forward(self, x): # x.size() == (batch_size, 3, 2^(n+2), 2^(n+2))
+        if self.alpha > 0.0:
+            y = Donwsampling(x)
+            y = self.fromRGB_layers[-2]
+        
+        x = self.fromRGB_layers[-1](x)
+        x = self.activation_fn(x)
+
+        for i, scale_layers in enumerate(reversed(self.scale_layers)):
+            for scale_layer in scale_layers:
+                x = scale_layer(x)
+                x = self.activation_fn(x)
+            if i != len(self.scale_layers) - 1:
+                x = Downsampling(x)
+            if i == 0 and alpha > 0.0:
+                x = self.alpha * y + (1 - self.alpha) * x
+        
+        x = x.view(x.size()[0], -1)
+        x = self.fc_layer(x)
+        x = self.activation_fn(x)
+        x = self.decision_layer(x)
+        return x.view(-1)
