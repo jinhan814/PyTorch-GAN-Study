@@ -82,7 +82,7 @@ class GNet(nn.Module):
 class DNet(nn.module):
     def __init__(self, channel_scale_0=512, dim_input=3, leakyReLU_slope=0.2):
         super(DNet, self).__init__()
-        self.channel_scale_0 = channel_scale_0 # Dirty, find a better way
+        self.channel_scale_0 = channel_scale_0 # Dirty, find a better name
         self.dim_input       = dim_input
         self.alpha           = 0.0
         self.activation_fn   = nn.LeakyReLU(leakyReLU_slope)
