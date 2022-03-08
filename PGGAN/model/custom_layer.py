@@ -104,4 +104,23 @@ class EqualizedLinear(ConstrainedLayer):
         
         
         
-        
+def MinibatchStddev(x,subGroupSize=4):
+
+    size = x.size()
+    subGroupSize = min(size[0], subGroupSize)
+    if size[0] % subGroupSize != 0:
+        subGroupSize = size[0]
+    G = int(size[0] / subGroupSize)
+    if subGroupSize > 1:
+        y = x.view(-1, subGroupSize, size[1], size[2], size[3])
+        y = torch.var(y, 1)
+        y = torch.sqrt(y + 1e-8)
+        y = y.view(G, -1)
+        y = torch.mean(y, 1).view(G, 1)
+        y = y.expand(G, size[2]*size[3]).view((G, 1, 1, size[2], size[3]))
+        y = y.expand(G, subGroupSize, -1, -1, -1)
+        y = y.contiguous().view((-1, 1, size[2], size[3]))
+    else:
+        y = torch.zeros(x.size(0), 1, x.size(2), x.size(3), device=x.device)
+
+    return torch.cat([x, y], dim=1)   

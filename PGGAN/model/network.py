@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from custom_layer import NormalizationLayer, EqualizedLinear, EqualizedConv2d, Upsampling, Downsampling
+from custom_layer import NormalizationLayer, EqualizedLinear, EqualizedConv2d, Upsampling, Downsampling, MinibatchStddev
 
 
 class GNet(nn.Module):
@@ -37,11 +37,11 @@ class GNet(nn.Module):
 
         # update scale_layers
         self.scale_layers.append(nn.ModuleList())
-        self.scale_layers[-1].append(EqualziedConv2d(self.scale_channels[-2],
+        self.scale_layers[-1].append(EqualizedConv2d(self.scale_channels[-2],
                                                      self.scale_channels[-1],
                                                      3,
                                                      padding=1))
-        self.scale_layers[-1].append(EqualziedConv2d(self.scale_channels[-1],
+        self.scale_layers[-1].append(EqualizedConv2d(self.scale_channels[-1],
                                                      self.scale_channels[-1],
                                                      3,
                                                      padding=1))
@@ -95,7 +95,7 @@ class DNet(nn.Module):
         # layer by scale
         self.scale_layers = nn.ModuleList()
         self.scale_layers.append(nn.ModuleList())
-        self.scale_layers[-1].append(EqualizedConv2d(self.channel_scale_0,
+        self.scale_layers[-1].append(EqualizedConv2d(self.channel_scale_0+1,
                                                      self.channel_scale_0,
                                                      3,
                                                      padding=1))
@@ -138,6 +138,8 @@ class DNet(nn.Module):
         x = self.activation_fn(x)
 
         for i, scale_layers in enumerate(reversed(self.scale_layers)):
+            if i == len(self.scale_layers) - 1:
+                x = MinibatchStddev(x)
             for scale_layer in scale_layers:
                 x = scale_layer(x)
                 x = self.activation_fn(x)
