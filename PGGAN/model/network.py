@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from custom_layer import NormalizationLayer, EqualizedLinear, EqualizedConv2d, Upsampling, Downsampling, MinibatchStddev
+from custom_layer import NormalizationLayer, EqualizedLinear, EqualizedConv2d, Upsampling, Downsampling, MiniBatchStddev
 
 
 class GNet(nn.Module):
@@ -139,7 +139,7 @@ class DNet(nn.Module):
 
         for i, scale_layers in enumerate(reversed(self.scale_layers)):
             if i == len(self.scale_layers) - 1:
-                x = MinibatchStddev(x)
+                x = MiniBatchStddev(x)
             for scale_layer in scale_layers:
                 x = scale_layer(x)
                 x = self.activation_fn(x)
