@@ -104,7 +104,7 @@ class EqualizedLinear(ConstrainedLayer):
         
         
         
-def MinibatchStddev(x,subGroupSize=4):
+def MiniBatchStddev(x,subGroupSize=4):
 
     size = x.size()
     subGroupSize = min(size[0], subGroupSize)
