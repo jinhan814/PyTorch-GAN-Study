@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .custom_layer import NormalizationLayer, EqualizedLinear, EqualizedConv2d, Upsampling, Downsampling
+from custom_layer import NormalizationLayer, EqualizedLinear, EqualizedConv2d, Upsampling, Downsampling
 
 
 class GNet(nn.Module):
@@ -55,7 +55,7 @@ class GNet(nn.Module):
         self.alpha = new_alpha
     
     def forward(self, x): # x.size() == (batch_size, 512, 1, 1)
-        x = x.view(x.size()[0], -1))
+        x = x.view(x.size()[0], -1)
         x = self.normalization_layer(x)
         x = self.fc_layer(x)
         x = self.activation_fn(x)
@@ -79,7 +79,7 @@ class GNet(nn.Module):
         return x
 
 
-class DNet(nn.module):
+class DNet(nn.Module):
     def __init__(self, channel_scale_0=512, dim_input=3, leakyReLU_slope=0.2):
         super(DNet, self).__init__()
         self.channel_scale_0 = channel_scale_0 # Dirty, find a better way
@@ -130,7 +130,7 @@ class DNet(nn.module):
     
     def forward(self, x): # x.size() == (batch_size, 3, 2^(n+2), 2^(n+2))
         if self.alpha > 0.0:
-            y = Donwsampling(x)
+            y = Downsampling(x)
             y = self.fromRGB_layers[-2]
         
         x = self.fromRGB_layers[-1](x)
