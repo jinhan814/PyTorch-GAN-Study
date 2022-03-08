@@ -103,7 +103,8 @@ class DNet(nn.Module):
         # fromRGB layer by scale
         self.fromRGB_layers = nn.ModuleList()
         self.fromRGB_layers.append(EqualizedConv2d(self.dim_input,
-                                                   self.channel_scale_0))
+                                                   self.channel_scale_0,
+                                                   1))
     
     def AddScale(self, new_channel):
         # update scale_channels
@@ -142,7 +143,7 @@ class DNet(nn.Module):
                 x = self.activation_fn(x)
             if i != len(self.scale_layers) - 1:
                 x = Downsampling(x)
-            if i == 0 and alpha > 0.0:
+            if i == 0 and self.alpha > 0.0:
                 x = self.alpha * y + (1 - self.alpha) * x
         
         x = x.view(x.size()[0], -1)
