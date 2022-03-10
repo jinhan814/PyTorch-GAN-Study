@@ -54,13 +54,14 @@ def Train(args):
         for epoch in range(args['epochs'][scale]):
             # dataloader 보면서 통과시키고 역전파
             if epoch % 10 == 9:
+                pass
                 # alpha값 감소시키기
         model.AddScale(args['channels'][scale])
         model.SetAlpha(1)
 
 
 
-if __name__ = "__main__":
+if __name__ == "__main__":
     json_path = ""
     with open(json_path) as f:
         config_json = json.load(f)
