@@ -9,6 +9,8 @@ import torch.nn.functional as F
 
 from model.model import PGGAN
 
+import dataset
+
 """
 해야할 일
 
@@ -51,14 +53,15 @@ def Train(args):
 
     # 3) epoch 돌리면서 학습시키기
     for scale in range(args['scales']):
+        model.train()
         for epoch in range(args['epochs'][scale]):
             # dataloader 보면서 통과시키고 역전파
-            if epoch % 10 == 9:
-                pass
-                # alpha값 감소시키기
+            # alpha값 감소시키기
+            alpha = 1-epoch/args['epochs'][scale] if scale else 0
+            model.SetAlpha(alpha)
+            
+            
         model.AddScale(args['channels'][scale])
-        model.SetAlpha(1)
-
 
 
 if __name__ == "__main__":
