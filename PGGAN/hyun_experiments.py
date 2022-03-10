@@ -47,3 +47,4 @@ import torch
 #     y = y.contiguous().view((-1, 1, size[2], size[3]))
 # else:
 #     y = torch.zeros(x.size(0), 1, x.size(2), x.size(3), device=x.device)
+#
