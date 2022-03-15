@@ -8,8 +8,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from model.model import PGGAN
-
-import dataset
+from dataset import IdolDataset
+from torch.utils.data import DataLoader
 
 """
 해야할 일
@@ -46,10 +46,10 @@ def Train(args):
     model = PGGAN(512, 3, 0.2)
 
     # 2) DataLoader 정의
-    train_dataset = None
-    val_dataset = None
-    train_loader = None
-    val_loader = None
+    train_dataset = IdolDataset(args['train_dir'])
+    val_dataset = IdolDataset(args['val_dir'])
+    train_loader = DataLoader(train_dataset, args['batch_size'], shuffle=True)
+    val_loader = DataLoader(val_dataset, args['batch_size'], shuffle=False)
 
     # 3) epoch 돌리면서 학습시키기
     for scale in range(args['scales']):

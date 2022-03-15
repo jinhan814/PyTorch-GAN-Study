@@ -3,6 +3,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 from network import GNet, DNet
 
+
+def LeastSquare(x, y):
+    return 0.5 * torch.mean((x - y) ** 2)
+
+
 class PGGAN():
     def __init__(self,
                  channel_scale_0=512,
@@ -15,6 +20,7 @@ class PGGAN():
         self.DNet = DNet(channel_scale_0,
                          dim_output,
                          leakyReLU_slope)
+        self.criterion = LeastSquare
         self.OptG = torch.optim.Adam(lr=learingRate, betas=[0,0.99],eps=10e-9,weight_decay=0.999)
         self.OptD = torch.optim.Adam(lr=learingRate, betas=[0,0.99],eps=10e-9,weight_decay=0.999)
     
@@ -29,10 +35,7 @@ class PGGAN():
     def train(self):
         self.GNet.train()
         self.DNet.train()
-        
+
     def val(self):
         self.GNet.val()
         self.DNet.val()
-    
-    
-    
