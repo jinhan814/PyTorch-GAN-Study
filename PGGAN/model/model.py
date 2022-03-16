@@ -1,11 +1,14 @@
+import sys
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from network import GNet, DNet
+from model.network import GNet, DNet
 
 
-def LeastSquare(x, y):
-    return 0.5 * torch.mean((x - y) ** 2)
+from loss import LeastSquare
+
+
 
 
 class PGGAN():
@@ -32,6 +35,10 @@ class PGGAN():
         self.GNet.SetAlpha(new_alpha)
         self.DNet.SetAlpha(new_alpha)
     
+    def ToDevice(self,device):
+        self.GNet.to(device)
+        self.DNet.to(device)
+        
     def train(self):
         self.GNet.train()
         self.DNet.train()

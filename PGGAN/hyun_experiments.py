@@ -48,3 +48,13 @@ import torch
 # else:
 #     y = torch.zeros(x.size(0), 1, x.size(2), x.size(3), device=x.device)
 #
+
+import torch
+import torchvision
+import cv2
+x = torch.randint(10,size=(8,8,3))
+x= torch.transpose(x,(2,0,1))
+print(x.size())
+x = torchvision.transforms.Resize((4,4))(x)
+x = torch.transpose(x,(1,2,0))
+print(x.size())
