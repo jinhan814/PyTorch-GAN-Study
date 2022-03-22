@@ -1,7 +1,9 @@
 import numpy
 import torch
-from torchvision import transforms
+import torch.nn.functional as F
 
 def resizing(img,s):
-    img  = transforms.Resize(s)(img)
+    img  = F.interpolate(img,size=(s,s))
+        
+        
         

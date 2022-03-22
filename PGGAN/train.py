@@ -1,6 +1,6 @@
 import os
 import json
-from cv2 import transform
+from PGGAN.utils import resizing
 import numpy as np
 import random
 
@@ -36,8 +36,6 @@ def Train(args):
 
     train_dataset = IdolDataset(args['train_dir'])
     train_loader = DataLoader(train_dataset, batch_size, shuffle=True)
-    val_dataset = IdolDataset(args['val_dir'])
-    val_loader = DataLoader(val_dataset, batch_size, shuffle=False)
     
     optimizer_D = model.OptD
     optimizer_G = model.OptG
@@ -55,7 +53,8 @@ def Train(args):
             loss_G_per_epoch = 0
             
             for batch_idx, img  in enumerate(train_loader):
-        
+                
+                img = resizing(img, args['img_size'][scale])
                 img = img.to(device)
                 z = torch.randn(batch_size, latent_vector_size).to(device)
                 loss_D = criterion(model.DNet(img), label_real) + criterion(model.DNet(model.GNet(z)), label_fake)
@@ -79,7 +78,8 @@ def Train(args):
 
 
 if __name__ == "__main__":
-    json_path = ""
+    json_path = "./config.json"
     with open(json_path) as f:
         config_json = json.load(f)
+        
     Train(config_json)
