@@ -132,7 +132,7 @@ class DNet(nn.Module):
     def forward(self, x): # x.size() == (batch_size, 3, 2^(n+2), 2^(n+2))
         if self.alpha > 0.0:
             y = Downsampling(x)
-            y = self.fromRGB_layers[-2]
+            y = self.fromRGB_layers[-2](y)
         
         x = self.fromRGB_layers[-1](x)
         x = self.activation_fn(x)
