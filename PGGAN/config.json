@@ -1,7 +1,7 @@
 {
-    "batch_size" : 2,
+    "batch_size" : 100,
     "seed" : 42,
-    "train_dir" : "./data",
+    "train_dir" : "/content/data/opt/ml/project/data/image",
     "scales" : 9,
     "epochs": [10, 20, 20, 20, 20, 20, 20, 20, 50 ],
     "img_size" : [4, 8, 16, 32, 64, 128, 256, 512, 1024],

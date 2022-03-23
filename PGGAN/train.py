@@ -1,8 +1,9 @@
 import os
 import json
-from PGGAN.utils import resizing
+from utils import resizing
 import numpy as np
 import random
+from tqdm import tqdm
 
 import torch
 import torch.nn as nn
@@ -26,6 +27,7 @@ def Train(args):
     SeedEverything(args['seed'])
     use_cuda = torch.cuda.is_available()
     device = torch.device('cuda' if use_cuda else 'cpu')
+    print(f'device: {"GPU" if use_cuda else "CPU"}')
     
     model = PGGAN(512, 3, 0.2)
     model.ToDevice(device)
@@ -46,14 +48,14 @@ def Train(args):
     model.train()
     for scale in range(args['scales']):
         for epoch in range(args['epochs'][scale]):
+            print(f'epoch:{epoch}/{args["epochs"][scale]}')
             alpha = 1-epoch/args['epochs'][scale] if scale else 0
             model.SetAlpha(alpha)
             
             loss_D_per_epoch = 0
             loss_G_per_epoch = 0
             
-            for batch_idx, img  in enumerate(train_loader):
-                
+            for batch_idx, img in enumerate(tqdm(train_loader)):
                 img = resizing(img, args['img_size'][scale])
                 img = img.to(device)
                 z = torch.randn(batch_size, latent_vector_size).to(device)
@@ -78,7 +80,7 @@ def Train(args):
 
 
 if __name__ == "__main__":
-    json_path = "./config.json"
+    json_path = "/content/PyTorch-GAN-Study/PGGAN/config.json"
     with open(json_path) as f:
         config_json = json.load(f)
         

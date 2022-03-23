@@ -16,8 +16,8 @@ class PGGAN():
         self.GNet = GNet(channel_scale_0, dim_output, leakyReLU_slope)
         self.DNet = DNet(channel_scale_0, dim_output, leakyReLU_slope)
         self.criterion = LeastSquare
-        self.OptG = torch.optim.Adam(lr=learningRate, betas=[0,0.99],eps=10e-9,weight_decay=0.999)
-        self.OptD = torch.optim.Adam(lr=learningRate, betas=[0,0.99],eps=10e-9,weight_decay=0.999)
+        self.OptG = torch.optim.Adam(self.GNet.parameters(), lr=learningRate, betas=[0,0.99],eps=10e-9,weight_decay=0.999)
+        self.OptD = torch.optim.Adam(self.DNet.parameters(), lr=learningRate, betas=[0,0.99],eps=10e-9,weight_decay=0.999)
     
     def AddScale(self, new_channel):
         self.GNet.AddScale(new_channel)
