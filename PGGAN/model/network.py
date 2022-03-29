@@ -71,7 +71,7 @@ class GNet(nn.Module):
                 x = self.normalization_layer(x)
             if scale == len(self.scale_layers) - 2 and self.alpha > 0.0:
                 y = self.toRGB_layers[-2](x)
-                y = Upsampling(x)
+                y = Upsampling(y)
         
         x = self.toRGB_layers[-1](x)
         if self.alpha > 0.0:

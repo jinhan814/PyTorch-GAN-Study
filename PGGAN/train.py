@@ -30,7 +30,6 @@ def Train(args):
     print(f'device: {"GPU" if use_cuda else "CPU"}')
     
     model = PGGAN(512, 3, 0.2)
-    model.ToDevice(device)
     
     batch_size = args['batch_size']
     latent_vector_size = 512
@@ -47,6 +46,7 @@ def Train(args):
     
     model.train()
     for scale in range(args['scales']):
+        model.ToDevice(device)
         for epoch in range(args['epochs'][scale]):
             print(f'epoch:{epoch}/{args["epochs"][scale]}')
             alpha = 1-epoch/args['epochs'][scale] if scale else 0
